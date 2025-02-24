@@ -1,0 +1,14 @@
+WITH previous_month_sales AS (
+    SELECT 
+        product_id,
+        SUM(amount_sold) AS total_sales
+    FROM sales_data
+    WHERE sale_date >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')
+      AND sale_date < DATE_TRUNC('month', CURRENT_DATE)
+    GROUP BY product_id
+)
+SELECT 
+    product_id,
+    total_sales,
+    RANK() OVER (ORDER BY total_sales DESC) AS rank
+FROM previous_month_sales;
