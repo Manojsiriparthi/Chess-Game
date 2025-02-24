@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  build-and-run:
+  build-and-upload:
     runs-on: ubuntu-latest
 
     steps:
@@ -14,25 +14,17 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Configure AWS Credentials
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: us-east-1  # Change if needed
-        run: |
-          echo "[default]" > ~/.aws/credentials
-          echo "aws_access_key_id=${AWS_ACCESS_KEY_ID}" >> ~/.aws/credentials
-          echo "aws_secret_access_key=${AWS_SECRET_ACCESS_KEY}" >> ~/.aws/credentials
-          echo "[default]" > ~/.aws/config
-          echo "region=${AWS_REGION}" >> ~/.aws/config
-          chmod 600 ~/.aws/credentials ~/.aws/config
-          aws sts get-caller-identity  # Verify AWS authentication
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1  # Region mentioned directly
+
+      - name: Verify AWS Credentials
+        run: aws sts get-caller-identity
 
       - name: Build Docker Image
         run: docker build -t s3-uploader .
 
-      - name: Run Docker Container with AWS Credentials
-        run: |
-          docker run --rm -e AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} \
-                        -e AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
-                        -e AWS_REGION=us-east-1 \
-                        s3-uploader
+      - name: Run Docker Container
+        run: docker run --rm -v ~/.aws:/root/.aws s3-uploader
