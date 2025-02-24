@@ -6,25 +6,27 @@ on:
       - main
 
 jobs:
-  build-and-upload:
+  build-and-deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Repository
+      - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1  # Region mentioned directly
-
-      - name: Verify AWS Credentials
-        run: aws sts get-caller-identity
+          aws-region: us-east-1
 
       - name: Build Docker Image
-        run: docker build -t s3-uploader .
+        run: |
+          docker build -t s3-uploader .
 
       - name: Run Docker Container
-        run: docker run --rm -v ~/.aws:/root/.aws s3-uploader
+        run: |
+          docker run --rm \
+            -e AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} \
+            -e AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
+            -e AWS_REGION=us-east-1 \
+            s3-uploader
